@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <metadata>
+        <name>organizeSurvey</name>
+        <type>plugin</type>
+        <creationDate>2019-10-29</creationDate>
+        <last_update>2021-05-26</last_update>
+        <author>Denis Chenu</author>
+        <authorUrl>https://www.sondages.pro</authorUrl>
+        <version>1.0.0</version>
+        <license>GPL</license>
+        <description><![CDATA[A new way to organize survey. With managing question random group integrated (Work in progress).]]></description>
+    </metadata>
+
+    <compatibility>
+        <version>4.4</version>
+        <version>5</version>
+    </compatibility>
+
+    <updaters disabled="disabled">
+    </updaters>
+</config>
