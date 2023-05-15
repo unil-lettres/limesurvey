@@ -1,4 +1,4 @@
-version: "3.0"
+version: "3.9"
 services:
   lime-app:
     image: acspri/limesurvey:5.2.12
@@ -15,7 +15,6 @@ services:
     env_file:
       - ./.env
     container_name: lime-app
-    restart: always
   lime-db:
     image: mariadb:10.6
     volumes:
@@ -25,7 +24,6 @@ services:
     ports:
       - "127.0.0.1:3302:3306"
     container_name: lime-db
-    restart: always
 
 volumes:
   db-data:

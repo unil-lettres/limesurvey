@@ -1,0 +1,21 @@
+# The following configuration is used for production in conjunction with the
+# main docker-compose.yml. Please follow the instructions in the README.md
+# file to deploy the application.
+
+version: "3.9"
+
+services:
+  lime-app:
+    restart: unless-stopped
+    deploy:
+      mode: global
+      resources:
+        limits:
+           memory: 1000M
+  lime-db:
+    restart: unless-stopped
+    deploy:
+      mode: global
+      resources:
+        limits:
+          memory: 1000M

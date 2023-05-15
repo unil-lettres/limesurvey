@@ -10,5 +10,6 @@ upload/*
 .idea
 .vscode
 
-# Ignore docker env variables
+# Ignore configuration files
 .env
+docker-compose.override.yml
