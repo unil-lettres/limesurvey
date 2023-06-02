@@ -53,6 +53,18 @@ Click install in regards of `organizeSurvey`.
 
 Next, find the plugin in the plugins list and activate it.
 
+# Upgrade
+
+[Official documentation](https://manual.limesurvey.org/Upgrading_from_a_previous_version)
+
+1. `docker compose down`
+1. `git pull origin master && git submodule update`
+1. Change `docker-compose.yml` to the desired LimeSurvey version.
+1. `docker compose pull`
+1. Open admin interface and upgrade database if asked (the prompt will show as soon as you get on the admin page).
+1. `docker compose up -d`
+1. Push changes to GitHub.
+
 # Configuration
 ## Main configuration
 
