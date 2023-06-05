@@ -57,13 +57,22 @@ Next, find the plugin in the plugins list and activate it.
 
 [Official documentation](https://manual.limesurvey.org/Upgrading_from_a_previous_version)
 
-1. `docker compose down`
-1. `git pull origin main && git submodule update`
-1. Change `docker-compose.yml` to the desired LimeSurvey version.
-1. `docker compose pull`
-1. `docker compose up -d`
-1. Open admin interface and upgrade database if asked (the prompt will show as soon as you get on the admin page).
-1. Push changes to GitHub.
+If you want to upgrade LimeSurvey to a new version, change the base image version
+in the `docker-compose.yml` file to the desired one, then push the changes.
+
+## Deploy changes
+
+Run the following commands (backup your database) from the repo directory:
+
+```bash
+docker compose down
+git pull origin main && git submodule update
+docker compose pull
+docker compose up -d
+```
+
+Connect to the admin interface to check if a database upgrade is required (the
+prompt will show as soon as you open the admin interface).
 
 # Configuration
 ## Main configuration
