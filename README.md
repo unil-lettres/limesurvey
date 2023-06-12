@@ -53,6 +53,12 @@ Click install in regards of `organizeSurvey`.
 
 Next, find the plugin in the plugins list and activate it.
 
+## Add custom themes
+
+To add a custom theme, go to Admin -> Configuration -> Themes and click `Upload & install`.
+You must chose a zip file containing the new theme.
+Themes available in the themes folder are not automatically installed in LimeSurvey.
+
 # Upgrade
 
 [Official documentation](https://manual.limesurvey.org/Upgrading_from_a_previous_version)
