@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   lime-app:
-    image: acspri/limesurvey:5.2.12
+    image: acspri/limesurvey:6.3.6
     volumes:
       - ./upload:/var/www/html/upload
       - ./plugins:/var/www/html/plugins
