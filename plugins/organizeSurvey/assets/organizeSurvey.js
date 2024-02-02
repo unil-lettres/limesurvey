@@ -190,13 +190,15 @@ var organizeSurvey = {
             $('#new-randomgroup-name').focus();
         });
 
-        $("#add-randomgroup-modal .btn-addrandomgroup").on('click',function() {
-            $("#new-randomgroup-name").val($("#new-randomgroup-name").val().trim());
-            if(!$("#new-randomgroup-name").val()) {
-                $('#new-randomgroup-name').focus();
-                return false;
+        $("#organizer-form").on("submit", function() {
+            if ($("#add-randomgroup-modal").is(":visible")) {
+                $("#new-randomgroup-name").val($("#new-randomgroup-name").val().trim());
+                if(!$("#new-randomgroup-name").val()) {
+                    $('#new-randomgroup-name').focus();
+                    return false;
+                }
+                $("#"+$("#add-randomgroup-modal").data("inputtoupdate")).val($("#new-randomgroup-name").val());
             }
-            $("#"+$("#add-randomgroup-modal").data("inputtoupdate")).val($("#new-randomgroup-name").val());
         });
     },
     setActionSetCountQuestion: function () {
