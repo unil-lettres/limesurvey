@@ -1,0 +1,13 @@
+.organizer-element{display:inline-block}
+.organizer-question-question {max-height:1.5em;text-overflow: ellipsis;overflow:hidden}
+.question-block-wrapper{display:flex}
+.question-tool{flex: none;}
+.question-text{flex: auto;padding: 0.3em 0.6em;}
+.organizer-random-group .organizer-addinrandomgroup{display:none}
+.random-group-next .btn-collapse-random-group{display:none}
+.random-group-next .organizer-random-group-count{display:none}
+.hidden-random-group{padding-top:0.1em;padding-bottom:0.1em}
+.hidden-random-group .organizer-handle{opacity:0.2}
+.hidden-random-group .organizer-handle:hover{opacity:initial}
+.hidden-random-group .organizer-random-group-title{opacity:0.2}
+.hidden-random-group .organizer-random-group-name{display:none}
