@@ -1,3 +1,0 @@
-[submodule "plugins/organizeSurvey"]
-	path = plugins/organizeSurvey
-	url = https://gitlab.com/SondagesPro/coreAndTools/organizeSurvey.git
