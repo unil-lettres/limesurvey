@@ -130,15 +130,17 @@ var organizeSurvey = {
     /* Hide random group in same group */
     hideSecondRandomGroupByGroup : function () {
         $(".show-question-in-random-group").each(function() {
+            var groupid = $(this).data("count-groupid");
+
+            $(".organizer-group").each(function() {
+                $(this).find("[data-related-groupid='"+groupid+"']").slice(1).addClass("hidden");
+            });
+
             var max = parseInt($(this).text());
             if(!max) {
                 return;
             }
-            var groupid = $(this).data("count-groupid");
             $(".organizer-group-list").find("[data-related-groupid='"+groupid+"']").slice(max).addClass("hidden-random-group");
-            $(".organizer-group").each(function() {
-                $(this).find("[data-related-groupid='"+groupid+"']").slice(max).addClass("hidden");
-            });
         });
     },
     /* Simple order on question page/group */

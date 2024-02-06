@@ -15,7 +15,7 @@
         echo CHtml::textField("question[{$aQuestion['qid']}][random_group]",$aQuestion['random_group'],array('data-type'=>'random_group','id'=>"question_randomgroup_{$aQuestion['qid']}"));
     ?>
     </div>
-    <div class="question-block-wrapper">
+    <div class="question-block-wrapper align-items-center">
         <div class="question-block-element question-tool">
             <div class="organizer-element organizer-handle btn btn-info btn-sm" data-sr-tooltip=1><i class="fa fa-arrows" aria-hidden="true"></i><span class="sr-only"><?=$lang['Move question']?></span></div>
             <?php
@@ -26,7 +26,7 @@
                 echo CHtml::link(
                     $aQuestion['title'],
                     $link,
-                    array('class'=>"organizer-element organizer-question-title label label-default")
+                    array('class'=>"organizer-element organizer-question-title badge bg-secondary")
                 );
             ?>
             <div class="organizer-element organizer-relevance">[<?=$aQuestion['relevance']?>]</div>
