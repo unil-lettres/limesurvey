@@ -40,14 +40,6 @@ working with the explorer of survey ressources.
 
 ## Add the organizeSurvey plugin
 
-You must first initialize the git submodule.
-
-```bash
-# Execute these commands at the root repository.
-git submodule init
-git submodule update
-```
-
 Install the plugin through Configuration -> Plugins -> Scan files.
 Click install in regards of `organizeSurvey`.
 
@@ -72,7 +64,7 @@ Run the following commands (backup your database) from the repo directory:
 
 ```bash
 docker compose down
-git pull origin main && git submodule update
+git pull origin main
 docker compose pull
 docker compose up -d
 ```
