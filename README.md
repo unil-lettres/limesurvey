@@ -72,6 +72,12 @@ docker compose up -d
 Connect to the admin interface to check if a database upgrade is required (the
 prompt will show as soon as you open the admin interface).
 
+Check that the custom theme `faculte_lettres` is still installed. Install it
+otherwise.
+
+Check that the organizeSurvey plugin is still installed and activated. Install
+and / or activate it otherwise.
+
 # Configuration
 ## Main configuration
 
