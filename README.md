@@ -93,28 +93,6 @@ If you use encrypted data, you must update the `config/security.php` file and
 set the required values. You can find an example of the values to set in the
 `config/config-defaults.php` file, search for the `encryptionkeypair` keywords.
 
-# Information about Apple Silicon
-
-If you activated emulation in Docker, you must not use the "rosetta" emulation
-in the "in development" settings section. PHP will raise an error that will
-crash the `entrypoint.sh` script.
-
-To check if PHP works as intended, execute `php --version` in the app[^1]
-container. You should not see the rosetta section as shown below:
-
-```bash
-PHP 8.0.15 (cli) (built: Jan 26 2022 17:33:13) ( NTS )
-Copyright (c) The PHP Group
-Zend Engine v4.0.15, Copyright (c) Zend Technologies
-    with Zend OPcache v8.0.15, Copyright (c), by Zend Technologies
-rosetta error: futex(FUTEX_LOCK_PI_PRIVATE) failure: 35
-Trace/breakpoint trap
-```
-[^1]: You must override the entrypoint of the container to be able to access
-    it. To do so, add `entrypoint: tail -f /dev/null` in the docker compose
-    file under the lime-app service.
-
-
 ## Problem with file permission on MacOs
 
 The version `>=6.3` don't works on MacOs with Docker (ok on Ubuntu). There is a
