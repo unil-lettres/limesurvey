@@ -95,6 +95,7 @@ set the required values. You can find an example of the values to set in the
 
 # Information about Apple Silicon
 
+## Rosetta Emulation
 If you activated emulation in Docker, you must not use the "rosetta" emulation
 in the "in development" settings section. PHP will raise an error that will
 crash the `entrypoint.sh` script.
@@ -113,3 +114,20 @@ Trace/breakpoint trap
 [^1]: You must override the entrypoint of the container to be able to access
     it. To do so, add `entrypoint: tail -f /dev/null` in the docker compose
     file under the lime-app service.
+
+
+## Problem with file permission on MacOs
+
+The version `>=6.3` don't works on MacOs with Docker (ok on Ubuntu). There is a
+problem with files permissions. The `/usr/local/bin/docker-entrypoint.sh` try to
+copy a default folders structure into the working folders structure and keeps
+the original files permissions that do not have write permission. These folders
+are bound to the host machine. If the host machine is on MacOS, the script will
+fail with the following error:
+
+`cp -dpRf /var/lime/application/config/* application/config`
+`cp: setting permissions for 'application/config/rest': Permission denied`
+
+It seems like somewhat MacOS will prevent `cp` to change the file permissions.
+
+**For local environment, change the bind `config` folder in favor of a docker volume.**
