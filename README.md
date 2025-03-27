@@ -95,7 +95,6 @@ set the required values. You can find an example of the values to set in the
 
 # Information about Apple Silicon
 
-## Rosetta Emulation
 If you activated emulation in Docker, you must not use the "rosetta" emulation
 in the "in development" settings section. PHP will raise an error that will
 crash the `entrypoint.sh` script.
@@ -130,4 +129,34 @@ fail with the following error:
 
 It seems like somewhat MacOS will prevent `cp` to change the file permissions.
 
-**For local environment, change the bind `config` folder in favor of a docker volume.**
+For local environment, change the binded folders in favor of a docker volume.
+
+You will have to manually copy plugins inside the `data-plugins` volume.
+
+```diff
+diff --git a/docker-compose.yml b/docker-compose.yml
+  index 244ed1e..c924f7a 100644
+  --- a/docker-compose.yml
+  +++ b/docker-compose.yml
+  @@ -2,9 +2,9 @@ services:
+     lime-app:
+       image: acspri/limesurvey:6.5.12
+       volumes:
+  -      - ./upload:/var/www/html/upload
+  -      - ./plugins:/var/www/html/plugins
+  -      - ./config:/var/www/html/application/config
+  +      - data-upload:/var/www/html/upload
+  +      - data-plugins:/var/www/html/plugins
+  +      - data-config:/var/www/html/application/config
+       ports:
+         - "127.0.0.1:8087:80"
+       depends_on:
+  @@ -26,3 +26,6 @@ services:
+   
+   volumes:
+     db-data:
+  +  data-upload:
+  +  data-plugins:
+  +  data-config:
+
+```
