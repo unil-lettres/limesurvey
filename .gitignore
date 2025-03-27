@@ -13,3 +13,7 @@ upload/*
 # Ignore configuration files
 .env
 docker-compose.override.yml
+
+# Ignore system files
+.DS_Store
+

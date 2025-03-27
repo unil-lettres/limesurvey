@@ -8,18 +8,25 @@ services:
     ports:
       - "127.0.0.1:8087:80"
     depends_on:
-      - lime-db
+      lime-db:
+        condition: service_healthy
     environment:
       - LIMESURVEY_DB_HOST=lime-db
     env_file:
       - ./.env
     container_name: lime-app
   lime-db:
-    image: mariadb:10.6
+    image: mariadb:11.4
     volumes:
       - db-data:/var/lib/mysql
     env_file:
       - ./.env
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     ports:
       - "127.0.0.1:3302:3306"
     container_name: lime-db
