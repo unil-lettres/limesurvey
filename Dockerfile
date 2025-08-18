@@ -1,4 +1,4 @@
-FROM acspri/limesurvey:6.5.12
+FROM acspri/limesurvey:6.12.4
 
 # Copy the necessary files into the project volumes
 COPY ./config/. /var/www/html/application/config
