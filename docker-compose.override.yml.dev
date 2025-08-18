@@ -1,0 +1,7 @@
+# The following configuration is used for development in conjunction with the
+# main docker-compose.yml. Please follow the instructions in the README.md
+# file to deploy the application.
+
+services:
+  lime-app:
+    image: unillett/limesurvey:latest-dev
