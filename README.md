@@ -73,7 +73,7 @@ Check that the organizeSurvey plugin is still installed and activated. Install a
 
 # Docker images
 
-Changes in the `development` branch will create new images tagged `latest-dev` & `latest-stage`, while changes in the `main` branch will create images tagged `latest`. And finally, when a new tag is created, an image with the defined limesurvey version will be automatically built.
+Changes in the `development` branch will create new images tagged `dev-latest` & `stage-latest`, while changes in the `main` branch will create images tagged `latest`. And finally, when a new tag is created, an image with the defined limesurvey version will be automatically built.
 
 # Configuration
 ## Main configuration
