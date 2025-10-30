@@ -4,4 +4,4 @@
 
 services:
   lime-app:
-    image: unillett/limesurvey:latest-dev
+    image: unillett/limesurvey:dev-latest

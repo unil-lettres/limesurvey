@@ -4,7 +4,7 @@
 
 services:
   lime-app:
-    image: unillett/limesurvey:latest-stage
+    image: unillett/limesurvey:stage-latest
     restart: unless-stopped
     deploy:
       mode: global
