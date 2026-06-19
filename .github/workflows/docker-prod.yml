@@ -16,12 +16,12 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: linux/amd64
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-26.04-arm
             arch: linux/arm64
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: main
 
@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: main
 
@@ -77,7 +77,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: main
 
