@@ -24,7 +24,7 @@ services:
       - lime-net
     container_name: lime-app
   lime-db:
-    image: mariadb:11.4
+    image: mariadb:12.3
     volumes:
       - db-data:/var/lib/mysql
     env_file:
