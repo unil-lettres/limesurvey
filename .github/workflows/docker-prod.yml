@@ -85,11 +85,15 @@ jobs:
           pattern: digests-*
           merge-multiple: true
 
+      - name: Set version output
+        id: version
+        run: echo "tag=v${{ needs.evaluate-jobs.outputs.limesurvey-tag }}" >> $GITHUB_OUTPUT
+
       - name: Merge digests
         uses: unil-lettres/actions/docker-merge@main
         with:
           image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
-          tag: ${{ github.ref_type == 'tag' && needs.evaluate-jobs.outputs.limesurvey-tag || 'latest' }}
+          tag: ${{ github.ref_type == 'tag' && steps.version.outputs.tag || 'latest' }}
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
 
