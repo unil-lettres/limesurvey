@@ -7,14 +7,12 @@ services:
     image: unillett/limesurvey:stage-latest
     restart: unless-stopped
     deploy:
-      mode: global
       resources:
         limits:
            memory: 1000M
   lime-db:
     restart: unless-stopped
     deploy:
-      mode: global
       resources:
         limits:
           memory: 1000M
