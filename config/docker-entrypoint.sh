@@ -94,7 +94,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     awk '/lime_/ && c == 0 { c = 1; system("cat") } { print }' application/config/config-sample-mysql.php > application/config/config.php <<'EOPHP'
     'attributes' => array(),
 EOPHP
-            # Add default email config, so it can be overriden later
+            # Add default email config, so it can be overridden later
             sed -i "/'config'=>array/s/$/\n'siteadminemail' => 'your-email@example.net',\n'siteadminbounce' => 'your-email@example.net',\n'siteadminname' => 'Your Name',\n'emailmethod' => 'mail',\n'emailsmtphost' => 'localhost',\n'emailsmtpuser' => '',\n'emailsmtppassword' => '',\n'emailsmtpssl' => '',\n'emailsmtpdebug' => '',\n'RPCInterface' => 'off',/" application/config/config.php
         fi
 
@@ -215,16 +215,13 @@ EOPHP
             fi
         fi
 
-        chmod ug-w -R application/config
+        # Owner (app user) must keep write access (e.g. LSSodium writes security.php);
+        # only group/other get read-only access
+        chmod u+rwX,go=rX -R application/config
         chmod ug=rwx -R tmp
         chmod ug=rwx -R upload
-        chown www-data:www-data -R tmp
-        chown www-data:www-data -R plugins
         mkdir -p upload/surveys
-        chown www-data:www-data -R upload
-        chown www-data:www-data -R application/config
         mkdir -p /var/lime/sessions
-        chown www-data:www-data -R /var/lime/sessions
         chmod ug=rwx -R /var/lime/sessions
 
     fi
@@ -260,5 +257,9 @@ EOPHP
         php application/commands/console.php flushassets
     fi
 fi
+
+# Relay Apache's file-based logs to the container's stdout/stderr
+tail -n 0 -f /var/log/apache2/access.log >&1 &
+tail -n 0 -f /var/log/apache2/error.log >&2 &
 
 exec "$@"
