@@ -87,7 +87,7 @@ jobs:
 
       - name: Set version output
         id: version
-        run: echo "tag=v${{ needs.evaluate-jobs.outputs.limesurvey-tag }}-patched" >> $GITHUB_OUTPUT
+        run: echo "tag=v${{ needs.evaluate-jobs.outputs.limesurvey-tag }}" >> $GITHUB_OUTPUT
 
       - name: Merge digests
         uses: unil-lettres/actions/docker-merge@main
