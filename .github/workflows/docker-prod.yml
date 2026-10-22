@@ -13,20 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       run-merge-build: ${{ steps.determine.outputs.run-merge-build }}
-      limesurvey-tag: ${{ steps.version.outputs.tag }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: main
-
-      - name: Extract LimeSurvey tag from Dockerfile
-        id: version
-        run: |
-          LIMESURVEY_TAG=$(grep -oP 'FROM acspri/limesurvey:\K[0-9]+\.[0-9]+\.[0-9]+' Dockerfile)
-          echo "tag=$LIMESURVEY_TAG" >> $GITHUB_OUTPUT
-          echo "Extracted LimeSurvey tag: $LIMESURVEY_TAG"
 
       - name: Determine jobs execution
         id: determine
@@ -35,7 +27,6 @@ jobs:
           image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-          version: ${{ steps.version.outputs.tag }}
 
   build:
     name: Build
@@ -78,16 +69,16 @@ jobs:
         with:
           ref: main
 
+      - name: Read VERSION file
+        id: version
+        run: echo "tag=v$(cat VERSION | tr -d '\n')" >> $GITHUB_OUTPUT
+
       - name: Download digests
         uses: actions/download-artifact@v8
         with:
           path: ${{ runner.temp }}/digests
           pattern: digests-*
           merge-multiple: true
-
-      - name: Set version output
-        id: version
-        run: echo "tag=v${{ needs.evaluate-jobs.outputs.limesurvey-tag }}" >> $GITHUB_OUTPUT
 
       - name: Merge digests
         uses: unil-lettres/actions/docker-merge@main

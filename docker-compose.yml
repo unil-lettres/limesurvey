@@ -14,7 +14,7 @@ services:
       - plugins-data:/var/www/html/plugins
       - config-data:/var/www/html/application/config
     ports:
-      - "127.0.0.1:8087:80"
+      - "127.0.0.1:8087:8080"
     depends_on:
       lime-db:
         condition: service_healthy
