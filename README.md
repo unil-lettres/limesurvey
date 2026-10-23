@@ -1,6 +1,6 @@
 # Introduction
 
-Docker-compose file and application settings for the LimeSurvey server installation and configuration.
+Docker configuration files and application settings for the LimeSurvey server installation and configuration.
 
 [LimeSurvey](https://www.limesurvey.org) is a free online survey tool.
 
