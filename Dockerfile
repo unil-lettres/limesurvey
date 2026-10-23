@@ -1,10 +1,10 @@
-# Stage 1: use the existing LimeSurvey image as the source of application files
+# Use the existing LimeSurvey image as the source of application files
 FROM acspri/limesurvey:6.5.12 AS limesurvey-source
 
-# Stage 2: PHP 8.1 with the CVE-2026-109618 / CVE-2026-109619 backports
+# Use PHP 8.1 backports with CVE-2026-109618 / CVE-2026-109619 fixes
 FROM ghcr.io/mpyw/php-eol-cve-2026-109618-109619:8.1-apache-bookworm
 
-# Copy LimeSurvey from the source image.
+# Copy LimeSurvey from the source image
 COPY --from=limesurvey-source /var/www/html/ /var/www/html/
 
 # Install the PHP extensions and system libraries required by LimeSurvey
@@ -123,8 +123,7 @@ RUN printf '%s\n' \
     '</FilesMatch>' \
     >> /var/www/html/.htaccess
 
-# Copy project-specific defaults into the image.
-# These paths must exist in your build context.
+# Copy the necessary files into the project volumes
 COPY config/. /var/www/html/application/config/
 COPY plugins/. /var/www/html/plugins/
 COPY upload/. /var/www/html/upload/
