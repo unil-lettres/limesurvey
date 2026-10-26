@@ -1,10 +1,8 @@
 # Introduction
 
-Docker-compose file and application settings for the LimeSurvey server installation and configuration.
+Docker configuration files and application settings for the LimeSurvey server installation and configuration.
 
 [LimeSurvey](https://www.limesurvey.org) is a free online survey tool.
-
-The docker compose file uses a [third party docker image](https://hub.docker.com/r/acspri/limesurvey) from docker hub as base image.
 
 ## Run the server for development
 
@@ -76,6 +74,7 @@ Check that the organizeSurvey plugin is still installed and activated. Install a
 Changes in the `development` branch will create new images tagged `dev-latest` & `stage-latest`, while changes in the `main` branch will create images tagged `latest`. Finally, when a new tag is created, an image with the corresponding LimeSurvey version will be automatically built, provided that the tag does not already exist on Docker Hub.
 
 # Configuration
+
 ## Main configuration
 
 The config file is automatically updated with the values set in the `.env` file the first time you launch the server. You can modify this file as wished for the config values not available in environment variables.
