@@ -39,7 +39,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sodium \
     ldap \
     imap \
-    mcrypt \
     redis
 
 # Configure PHP settings for LimeSurvey
@@ -97,12 +96,10 @@ COPY VERSION /tmp/LIMESURVEY_VERSION
 RUN set -eux; \
     FULL_VERSION="$(tr -d ' \t\r\n' </tmp/LIMESURVEY_VERSION)"; \
     LIMESURVEY_TAG="${FULL_VERSION%%-rev*}"; \
-    curl -SL "https://download.limesurvey.org/latest-master/limesurvey${LIMESURVEY_TAG}.zip" -o /tmp/lime.zip; \
+    curl -SLf "https://download.limesurvey.org/latest-master/limesurvey${LIMESURVEY_TAG}.zip" -o /tmp/lime.zip; \
     unzip /tmp/lime.zip -d /tmp; \
-    mv /tmp/lime*/* /var/www/html/; \
-    mv /tmp/lime*/.[a-zA-Z]* /var/www/html/; \
+    for d in /tmp/lime*; do if [ -d "$d" ]; then find "$d" -maxdepth 1 -mindepth 1 -exec mv -t /var/www/html/ {} +; rmdir "$d"; fi; done; \
     rm /tmp/lime.zip; \
-    rmdir /tmp/lime*; \
     rm -f /tmp/LIMESURVEY_VERSION; \
     chown -R dockeruser:dockeruser /var/www/html; \
     chmod -R u+rwX,go=rX /var/www/html
