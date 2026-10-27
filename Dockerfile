@@ -141,7 +141,7 @@ RUN touch /usr/local/etc/php/conf.d/sessions.ini \
     && chown dockeruser:dockeruser /usr/local/etc/php/conf.d/sessions.ini
 
 # Copy entrypoint script
-COPY config/docker-entrypoint.sh /bin/docker-entrypoint.sh
+COPY docker-entrypoint.sh /bin/docker-entrypoint.sh
 RUN chmod +x /bin/docker-entrypoint.sh
 
 # Switch to unprivileged user
