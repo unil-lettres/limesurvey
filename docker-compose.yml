@@ -14,7 +14,13 @@ services:
       - plugins-data:/var/www/html/plugins
       - config-data:/var/www/html/application/config
     ports:
-      - "127.0.0.1:8087:80"
+      - "127.0.0.1:8087:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
     depends_on:
       lime-db:
         condition: service_healthy
@@ -28,7 +34,7 @@ services:
     volumes:
       - db-data:/var/lib/mysql
     env_file:
-      - ./.env
+      - ./db.env
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
