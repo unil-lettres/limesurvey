@@ -51,7 +51,6 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     file_env 'LIMESURVEY_API_MODE' 'off'
 
     if [ -z "$LIMESURVEY_DONT_UPDATE" ]; then
-
         # if we're linked to MySQL and thus have credentials already, let's use them
         file_env 'LIMESURVEY_DB_USER' "${MYSQL_ENV_MYSQL_USER:-root}"
         if [ "$LIMESURVEY_DB_USER" = 'root' ]; then
@@ -95,7 +94,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     'attributes' => array(),
 EOPHP
             # Add default email config, so it can be overridden later
-            sed -i "/'config'=>array/s/$/\n'siteadminemail' => 'your-email@example.net',\n'siteadminbounce' => 'your-email@example.net',\n'siteadminname' => 'Your Name',\n'emailmethod' => 'mail',\n'emailsmtphost' => 'localhost',\n'emailsmtpuser' => '',\n'emailsmtppassword' => '',\n'emailsmtpssl' => '',\n'emailsmtpdebug' => '',\n'RPCInterface' => 'off',/" application/config/config.php
+            sed -i "/'config'[[:space:]]*=>[[:space:]]*array/s/$/\n'siteadminemail' => 'your-email@example.net',\n'siteadminbounce' => 'your-email@example.net',\n'siteadminname' => 'Your Name',\n'emailmethod' => 'mail',\n'emailsmtphost' => 'localhost',\n'emailsmtpuser' => '',\n'emailsmtppassword' => '',\n'emailsmtpssl' => '',\n'emailsmtpdebug' => '',\n'RPCInterface' => 'off',/" application/config/config.php
         fi
 
         # See http://stackoverflow.com/a/2705678/433558
@@ -111,7 +110,12 @@ EOPHP
         set_config() {
             key="$1"
             value="$2"
-            sed -i "/'$key'/s>\(.*\)>$value,1"  application/config/config.php
+            if grep -q "'$key'" application/config/config.php; then
+                sed -i "/'$key'/s>\(.*\)>$value,1"  application/config/config.php
+            else
+                # When the key is missing, insert it
+                sed -i "/'config'[[:space:]]*=>[[:space:]]*array/a\\'$key' => $value," application/config/config.php
+            fi
         }
 
         LIMESURVEY_DB_CHARSET="utf8mb4"
@@ -138,7 +142,7 @@ EOPHP
         fi
 
         # Remove session line if exists
-        sed -i "/^'session'/d" application/config/config.php
+        sed -i "/^[[:space:]]*'session'/d" application/config/config.php
         if [ -n "$LIMESURVEY_USE_DB_SESSIONS" ]; then
             # Add session line
     awk '/DbHttpSession/ && c == 0 { c = 1; system("cat") } { print }' application/config/config.php > application/config/config.tmp <<'EOPHP'
@@ -171,11 +175,10 @@ EOPHP
     echo "" > /usr/local/etc/php/conf.d/sessions.ini
     if [ -n "$LIMESURVEY_PHP_SESSION_SAVE_HANDLER" ] && [ -n "$LIMESURVEY_PHP_SESSION_SAVE_PATH" ]; then
         echo "Configuring custom session handler for PHP"
-        echo -e "session.save_handler = $LIMESURVEY_PHP_SESSION_SAVE_HANDLER\nsession.save_path = $LIMESURVEY_PHP_SESSION_SAVE_PATH" > /usr/local/etc/php/conf.d/sessions.ini
+        echo -e "session.save_handler = \"$LIMESURVEY_PHP_SESSION_SAVE_HANDLER\"\nsession.save_path = \"$LIMESURVEY_PHP_SESSION_SAVE_PATH\"" > /usr/local/etc/php/conf.d/sessions.ini
     fi
 
     if [ -z "$LIMESURVEY_DONT_UPDATE" ]; then
-
         DBENGINE='MyISAM'
         if [ -n "$LIMESURVEY_USE_INNODB" ]; then
             chmod ug+w application/core/db/MysqlSchema.php
@@ -223,7 +226,6 @@ EOPHP
         mkdir -p upload/surveys
         mkdir -p /var/lime/sessions
         chmod ug=rwx -R /var/lime/sessions
-
     fi
 
     # The following 12 lines are borrowed from martialblog's entrypoint.sh
@@ -237,9 +239,7 @@ EOPHP
         sleep 5
     done
 
-
     if [ -z "$LIMESURVEY_DONT_UPDATE" ]; then
-
         echo 'Info: Check if database already provisioned. Nevermind the stack trace.'
         php application/commands/console.php updatedb || MUST_CREATE_DB=true
 
