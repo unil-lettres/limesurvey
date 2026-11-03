@@ -86,11 +86,11 @@ Themes available in the themes folder are not automatically installed in LimeSur
 
 # Application updates
 
-We trigger a GitHub Actions workflow to build the custom image and push it to our [Docker Hub repository](https://hub.docker.com/r/unillett/limesurvey).
+If you plan to upgrade to a new major version, you should check the plugins and themes compatibility and update them if needed. Themes should be zipped and re-installed manually, while plugins are backed into the image but are deactivated upon upgrade. You should check the plugins list and re-activate them if needed.
 
 When a new [Limesurvey version](https://github.com/LimeSurvey/LimeSurvey/tags) is available, you should update the value in the [VERSION](https://github.com/unil-lettres/limesurvey/blob/development/VERSION) file to reference the new tag. When the change is pushed to the repository, the workflow will automatically build the new image and push it to [Docker Hub](https://hub.docker.com/r/unillett/limesurvey).
 
-If you need to trigger a rebuild or mark a custom image version, you can add a revision suffix (such as `-rev1`) to the value in the `VERSION` file. This suffix will be ignored when fetching the BookStack source code, but it allows you to distinguish builds in your workflow and Docker image tags.
+If you need to trigger a rebuild or mark a custom image version, you can add a revision suffix (such as `-rev1`) to the value in the `VERSION` file. This suffix will be ignored when fetching the LimeSurvey source code, but it allows you to distinguish builds in your workflow and Docker image tags.
 
 # Docker images
 

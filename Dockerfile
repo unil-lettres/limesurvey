@@ -47,7 +47,6 @@ RUN { \
         echo 'opcache.interned_strings_buffer=8'; \
         echo 'opcache.max_accelerated_files=4000'; \
         echo 'opcache.revalidate_freq=2'; \
-        echo 'opcache.fast_shutdown=1'; \
         echo 'opcache.enable_cli=1'; \
     } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 RUN { \
@@ -97,13 +96,12 @@ RUN set -eux; \
     chmod -R u+rwX,go=rX /var/www/html
 
 # Setup internal fallback directories for volume initialization
-RUN mkdir -p /var/lime/application/config /var/lime/upload /var/lime/plugins /var/lime/tmp /var/lime/sessions \
+RUN mkdir -p /var/lime/application/config /var/lime/upload /var/lime/tmp /var/lime/sessions \
     && chown -R www-data:www-data /var/lime/sessions \
     && cp -dpR /var/www/html/application/config/* /var/lime/application/config \
     && cp -dpR /var/www/html/upload/* /var/lime/upload \
-    && cp -dpR /var/www/html/plugins/* /var/lime/plugins \
     && cp -dpR /var/www/html/tmp/* /var/lime/tmp \
-    && chown -R www-data:www-data /var/lime/application /var/lime/plugins /var/lime/tmp /var/lime/upload \
+    && chown -R www-data:www-data /var/lime/application /var/lime/tmp /var/lime/upload \
     && chmod -R u+rwX,go=rX /var/lime/tmp /var/www/html/tmp
 
 # Deny access to sensitive files in .htaccess
@@ -119,11 +117,16 @@ RUN chown -R www-data:www-data /var/www/html/plugins \
     && chmod -R u+rwX,go=rX /var/www/html/plugins
 
 # The base image symlinks Apache logs to /dev/stdout and /dev/stderr; those
-# /proc/self/fd links are not resolvable by an unprivileged user, so use
-# regular files instead (tail them with: docker exec lime-app tail -f /var/log/apache2/*.log)
-RUN rm -f /var/log/apache2/access.log /var/log/apache2/error.log /var/log/apache2/other_vhosts_access.log \
-    && touch /var/log/apache2/access.log /var/log/apache2/error.log /var/log/apache2/other_vhosts_access.log \
-    && chown www-data:www-data /var/log/apache2/*.log
+# /proc/self/fd links are not resolvable by an unprivileged user. Pipe the logs
+# through cat instead: it inherits the container's stdout, so Docker handles the
+# log rotation (see the logging options in docker-compose.yml) and nothing grows on disk.
+RUN rm -f /var/log/apache2/*.log \
+    && a2disconf other-vhosts-access-log \
+    && sed -i -e 's#^\([[:space:]]*\)ErrorLog .*#\1ErrorLog "|/bin/cat"#' \
+              -e 's#^\([[:space:]]*\)CustomLog .*#\1CustomLog "|/bin/cat" combined#' \
+              /etc/apache2/sites-available/000-default.conf \
+    && echo 'ErrorLog "|/bin/cat"' > /etc/apache2/conf-available/log-to-stdout.conf \
+    && a2enconf log-to-stdout
 
 # The entrypoint (running unprivileged) rewrites this file on every start
 RUN touch /usr/local/etc/php/conf.d/sessions.ini \

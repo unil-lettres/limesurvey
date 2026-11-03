@@ -52,6 +52,36 @@ set_config() {
     fi
 }
 
+# Exit status: 0 if the LimeSurvey tables exist, 1 if the table is missing (SQLSTATE
+# 42S02 on MySQL/MariaDB, 42P01 on PostgreSQL), 2 if the connection failed, 3 on any
+# other query error.
+# shellcheck disable=SC2016 # the single-quoted body is PHP code, not shell
+db_has_tables() {
+    DSN="$LIMESURVEY_DB_TYPE:host=$LIMESURVEY_DB_HOST;port=$LIMESURVEY_DB_PORT;dbname=$LIMESURVEY_DB_NAME;" \
+    DB_USER="$LIMESURVEY_DB_USER" DB_PASS="$LIMESURVEY_DB_PASSWORD" \
+    TABLE="${LIMESURVEY_TABLE_PREFIX}settings_global" php -r '
+        $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
+        if (getenv("MYSQL_SSL_CA")) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = "/var/www/html/" . getenv("MYSQL_SSL_CA");
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+        }
+        try {
+            $pdo = new PDO(getenv("DSN"), getenv("DB_USER"), getenv("DB_PASS"), $options);
+        } catch (Throwable $e) {
+            fwrite(STDERR, $e->getMessage() . "\n");
+            exit(2);
+        }
+        try {
+            $pdo->query("SELECT 1 FROM " . getenv("TABLE") . " LIMIT 1");
+        } catch (PDOException $e) {
+            if (in_array((string) $e->getCode(), ["42S02", "42P01"], true)) {
+                exit(1);
+            }
+            fwrite(STDERR, $e->getMessage() . "\n");docker-enbtrypoint
+            exit(3);
+        }'
+}
+
 # Download a CA certificate if it is the one requested through MYSQL_SSL_CA
 download_ca() {
     local file="$1" url="$2"
@@ -114,20 +144,14 @@ if [[ "${1:-}" == apache2* ]] || [ "${1:-}" == php-fpm ]; then
         echo >&2 "Copying default container default config files into config volume..."
         cp -dpRf /var/lime/application/config/* application/config
 
-        if ! [ -e plugins/index.html ]; then
-            echo >&2 "No index.html file in plugins dir in $(pwd) Copying defaults..."
-            cp -dpRf /var/lime/plugins/* plugins
-        fi
-
         if ! [ -e tmp/index.html ]; then
             echo >&2 "No index.html file in tmp dir in $(pwd) Copying defaults..."
             cp -dpRf /var/lime/tmp/* tmp
         fi
 
-        if ! [ -e upload/index.html ]; then
-            echo >&2 "No index.html file upload dir in $(pwd) Copying defaults..."
-            cp -dpRf /var/lime/upload/* upload
-        fi
+        # Only copy missing files so that existing uploads are never overwritten
+        # (--update=none rather than -n, which exits non-zero when a file is skipped)
+        cp -dpR --update=none /var/lime/upload/* upload
 
         if ! [ -e application/config/config.php ]; then
             echo >&2 "No config file in $(pwd) Copying default config file..."
@@ -241,7 +265,17 @@ EOPHP
 
     if [ -z "$LIMESURVEY_DONT_UPDATE" ]; then
         echo 'Info: Check if database already provisioned. Nevermind the stack trace.'
-        php application/commands/console.php updatedb || MUST_CREATE_DB=true
+        if ! php application/commands/console.php updatedb; then
+            # updatedb also fails on a real migration error: only install over an empty database
+            db_status=0
+            db_has_tables || db_status=$?
+            if [ "$db_status" -eq 1 ]; then
+                MUST_CREATE_DB=true
+            else
+                echo >&2 'error: updatedb failed on an existing database (or the database is unreachable or unreadable); not installing'
+                exit 1
+            fi
+        fi
 
         if [ -v MUST_CREATE_DB ] && [ -n "$LIMESURVEY_ADMIN_USER" ] && [ -n "$LIMESURVEY_ADMIN_PASSWORD" ]; then
             echo >&2 'Database not yet populated - installing Limesurvey database'
@@ -257,9 +291,5 @@ EOPHP
         php application/commands/console.php flushassets
     fi
 fi
-
-# Relay Apache's file-based logs to the container's stdout/stderr
-tail -n 0 -f /var/log/apache2/access.log >&1 &
-tail -n 0 -f /var/log/apache2/error.log >&2 &
 
 exec "$@"
