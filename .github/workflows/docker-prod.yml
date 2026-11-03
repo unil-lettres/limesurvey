@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       run-merge-build: ${{ steps.determine.outputs.run-merge-build }}
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -20,10 +21,16 @@ jobs:
         with:
           ref: main
 
+      - name: Read VERSION file
+        id: version
+        # Strip the "+<digits>" build suffix, keep any following suffix (e.g. -rev1)
+        run: echo "version=$(tr -d '\n' < VERSION | sed -E 's/\+[0-9]+//')" >> $GITHUB_OUTPUT
+
       - name: Determine jobs execution
         id: determine
         uses: unil-lettres/actions/job-execution@main
         with:
+          version: ${{ steps.version.outputs.version }}
           image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -69,10 +76,6 @@ jobs:
         with:
           ref: main
 
-      - name: Read VERSION file
-        id: version
-        run: echo "tag=v$(cat VERSION | tr -d '\n')" >> $GITHUB_OUTPUT
-
       - name: Download digests
         uses: actions/download-artifact@v8
         with:
@@ -84,7 +87,7 @@ jobs:
         uses: unil-lettres/actions/docker-merge@main
         with:
           image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
-          tag: ${{ github.ref_type == 'tag' && steps.version.outputs.tag || 'latest' }}
+          tag: ${{ github.ref_type == 'tag' && format('v{0}', needs.evaluate-jobs.outputs.version) || 'latest' }}
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
 
