@@ -83,14 +83,6 @@ RUN a2enmod rewrite remoteip && \
 RUN sed -i -E 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' /etc/apache2/sites-available/000-default.conf
 
-# Create unprivileged user and set permissions for Apache runtime directories
-RUN groupadd -r dockeruser --gid=1000 && \
-    useradd -r -g dockeruser --uid=1000 --create-home --home-dir=/home/dockeruser --shell=/sbin/nologin dockeruser && \
-    sed -i 's/: ${APACHE_RUN_USER:=www-data}/: ${APACHE_RUN_USER:=dockeruser}/' /etc/apache2/envvars && \
-    sed -i 's/: ${APACHE_RUN_GROUP:=www-data}/: ${APACHE_RUN_GROUP:=dockeruser}/' /etc/apache2/envvars && \
-    mkdir -p /var/run/apache2 /var/lock/apache2 /var/log/apache2 && \
-    chown -R dockeruser:dockeruser /var/run/apache2 /var/lock/apache2 /var/log/apache2
-
 # Download, extract LimeSurvey dynamically using the VERSION file
 COPY VERSION /tmp/LIMESURVEY_VERSION
 RUN set -eux; \
@@ -101,17 +93,17 @@ RUN set -eux; \
     for d in /tmp/lime*; do if [ -d "$d" ]; then find "$d" -maxdepth 1 -mindepth 1 -exec mv -t /var/www/html/ {} +; rmdir "$d"; fi; done; \
     rm /tmp/lime.zip; \
     rm -f /tmp/LIMESURVEY_VERSION; \
-    chown -R dockeruser:dockeruser /var/www/html; \
+    chown -R www-data:www-data /var/www/html; \
     chmod -R u+rwX,go=rX /var/www/html
 
 # Setup internal fallback directories for volume initialization
 RUN mkdir -p /var/lime/application/config /var/lime/upload /var/lime/plugins /var/lime/tmp /var/lime/sessions \
-    && chown -R dockeruser:dockeruser /var/lime/sessions \
+    && chown -R www-data:www-data /var/lime/sessions \
     && cp -dpR /var/www/html/application/config/* /var/lime/application/config \
     && cp -dpR /var/www/html/upload/* /var/lime/upload \
     && cp -dpR /var/www/html/plugins/* /var/lime/plugins \
     && cp -dpR /var/www/html/tmp/* /var/lime/tmp \
-    && chown -R dockeruser:dockeruser /var/lime/application /var/lime/plugins /var/lime/tmp /var/lime/upload \
+    && chown -R www-data:www-data /var/lime/application /var/lime/plugins /var/lime/tmp /var/lime/upload \
     && chmod -R u+rwX,go=rX /var/lime/tmp /var/www/html/tmp
 
 # Deny access to sensitive files in .htaccess
@@ -123,7 +115,7 @@ RUN printf '%s\n' \
 
 # Copy your local project plugins
 COPY ./plugins/. /var/www/html/plugins
-RUN chown -R dockeruser:dockeruser /var/www/html/plugins \
+RUN chown -R www-data:www-data /var/www/html/plugins \
     && chmod -R u+rwX,go=rX /var/www/html/plugins
 
 # The base image symlinks Apache logs to /dev/stdout and /dev/stderr; those
@@ -131,18 +123,18 @@ RUN chown -R dockeruser:dockeruser /var/www/html/plugins \
 # regular files instead (tail them with: docker exec lime-app tail -f /var/log/apache2/*.log)
 RUN rm -f /var/log/apache2/access.log /var/log/apache2/error.log /var/log/apache2/other_vhosts_access.log \
     && touch /var/log/apache2/access.log /var/log/apache2/error.log /var/log/apache2/other_vhosts_access.log \
-    && chown dockeruser:dockeruser /var/log/apache2/*.log
+    && chown www-data:www-data /var/log/apache2/*.log
 
 # The entrypoint (running unprivileged) rewrites this file on every start
 RUN touch /usr/local/etc/php/conf.d/sessions.ini \
-    && chown dockeruser:dockeruser /usr/local/etc/php/conf.d/sessions.ini
+    && chown www-data:www-data /usr/local/etc/php/conf.d/sessions.ini
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /bin/docker-entrypoint.sh
 RUN chmod +x /bin/docker-entrypoint.sh
 
-# Switch to unprivileged user
-USER dockeruser
+# www-data
+USER 33
 
 EXPOSE 8080
 
