@@ -25,7 +25,47 @@ file_env() {
     unset "$fileVar"
 }
 
-if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
+# Quote a value as a PHP single-quoted string literal
+php_str() {
+    local s
+    s="$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e "s/'/\\\\'/g")"
+    printf "'%s'" "$s"
+}
+
+# Replaces the key's value if present, otherwise adds it to the 'config' array.
+set_config() {
+    local key="$1" value="$2"
+    if grep -q "'$key'[[:space:]]*=>" application/config/config.php; then
+        KEY="$key" VAL="$value" awk '
+            BEGIN { pat = "^[[:space:]]*\047" ENVIRON["KEY"] "\047[[:space:]]*=>" }
+            $0 ~ pat && !done {
+                idx = index($0, "=>")
+                $0 = substr($0, 1, idx + 1) " " ENVIRON["VAL"] ","
+                done = 1
+            }
+            { print }' application/config/config.php > application/config/config.tmp
+        mv application/config/config.tmp application/config/config.php
+    else
+        LINE="        '$key' => $value," awk -v pat="'config'[[:space:]]*=>[[:space:]]*array" \
+            '{ print } $0 ~ pat && !done { print ENVIRON["LINE"]; done = 1 }' application/config/config.php > application/config/config.tmp
+        mv application/config/config.tmp application/config/config.php
+    fi
+}
+
+# Download a CA certificate if it is the one requested through MYSQL_SSL_CA
+download_ca() {
+    local file="$1" url="$2"
+    if [ "$MYSQL_SSL_CA" = "$file" ] && ! [ -e "$file" ]; then
+        echo "Downloading $file"
+        if curl -o "$file" -fsL "$url"; then
+            echo "Downloaded successfully"
+        else
+            echo "Failed to download certificate - continuing anyway"
+        fi
+    fi
+}
+
+if [[ "${1:-}" == apache2* ]] || [ "${1:-}" == php-fpm ]; then
     file_env 'LIMESURVEY_DB_TYPE' 'mysql'
     file_env 'LIMESURVEY_DB_HOST' 'mysql'
     file_env 'LIMESURVEY_DB_PORT' '3306'
@@ -34,6 +74,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     file_env 'LIMESURVEY_ADMIN_EMAIL' 'lime@lime.lime'
     file_env 'LIMESURVEY_ADMIN_USER' ''
     file_env 'LIMESURVEY_ADMIN_PASSWORD' ''
+    file_env 'LIMESURVEY_FROM_EMAIL' "$LIMESURVEY_ADMIN_EMAIL"
     file_env 'LIMESURVEY_SMTP_HOST' ''
     file_env 'LIMESURVEY_SMTP_USER' ''
     file_env 'LIMESURVEY_SMTP_PASSWORD' ''
@@ -67,6 +108,7 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
             exit 1
         fi
 
+        # Must run before copying into the config dir
         chmod ug+w -R application/config
 
         echo >&2 "Copying default container default config files into config volume..."
@@ -89,108 +131,66 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 
         if ! [ -e application/config/config.php ]; then
             echo >&2 "No config file in $(pwd) Copying default config file..."
-            #Copy default config file but also allow for the addition of attributes
-    awk '/lime_/ && c == 0 { c = 1; system("cat") } { print }' application/config/config-sample-mysql.php > application/config/config.php <<'EOPHP'
-    'attributes' => array(),
-EOPHP
-            # Add default email config, so it can be overridden later
-            sed -i "/'config'[[:space:]]*=>[[:space:]]*array/s/$/\n'siteadminemail' => 'your-email@example.net',\n'siteadminbounce' => 'your-email@example.net',\n'siteadminname' => 'Your Name',\n'emailmethod' => 'mail',\n'emailsmtphost' => 'localhost',\n'emailsmtpuser' => '',\n'emailsmtppassword' => '',\n'emailsmtpssl' => '',\n'emailsmtpdebug' => '',\n'RPCInterface' => 'off',/" application/config/config.php
+            # Copy the sample config, adding a placeholder for db attributes (filled in below)
+            sed -e "/^[[:space:]]*'tablePrefix'[[:space:]]*=>/a\\            'attributes' => array()," \
+                application/config/config-sample-mysql.php > application/config/config.php
         fi
 
-        # See http://stackoverflow.com/a/2705678/433558
-        sed_escape_lhs() {
-            echo "$@" | sed -e 's/[]\/$*.^|[]/\\&/g'
-        }
-        sed_escape_rhs() {
-            echo "$@" | sed -e 's/[\/&]/\\&/g'
-        }
-        php_escape() {
-            php -r 'var_export(('$2') $argv[1]);' -- "$1"
-        }
-        set_config() {
-            key="$1"
-            value="$2"
-            if grep -q "'$key'" application/config/config.php; then
-                sed -i "/'$key'/s>\(.*\)>$value,1"  application/config/config.php
-            else
-                # When the key is missing, insert it
-                sed -i "/'config'[[:space:]]*=>[[:space:]]*array/a\\'$key' => $value," application/config/config.php
-            fi
-        }
-
         LIMESURVEY_DB_CHARSET="utf8mb4"
-        if [ $LIMESURVEY_DB_TYPE == "pgsql" ]; then
+        if [ "$LIMESURVEY_DB_TYPE" = "pgsql" ]; then
             LIMESURVEY_DB_CHARSET="utf8"
         fi
 
-        set_config 'connectionString' "'$LIMESURVEY_DB_TYPE:host=$LIMESURVEY_DB_HOST;port=$LIMESURVEY_DB_PORT;dbname=$LIMESURVEY_DB_NAME;'"
-        set_config 'charset' "'$LIMESURVEY_DB_CHARSET'"
-        set_config 'tablePrefix' "'$LIMESURVEY_TABLE_PREFIX'"
-        set_config 'username' "'$LIMESURVEY_DB_USER'"
-        set_config 'password' "'$LIMESURVEY_DB_PASSWORD'"
+        set_config 'connectionString' "$(php_str "$LIMESURVEY_DB_TYPE:host=$LIMESURVEY_DB_HOST;port=$LIMESURVEY_DB_PORT;dbname=$LIMESURVEY_DB_NAME;")"
+        set_config 'charset' "$(php_str "$LIMESURVEY_DB_CHARSET")"
+        set_config 'tablePrefix' "$(php_str "$LIMESURVEY_TABLE_PREFIX")"
+        set_config 'username' "$(php_str "$LIMESURVEY_DB_USER")"
+        set_config 'password' "$(php_str "$LIMESURVEY_DB_PASSWORD")"
         set_config 'urlFormat' "'path'"
         set_config 'debug' "$LIMESURVEY_DEBUG"
         set_config 'debugsql' "$LIMESURVEY_SQL_DEBUG"
-        set_config 'RPCInterface' "'$LIMESURVEY_API_MODE'"
-        set_config 'showScriptName' "true"
+        set_config 'RPCInterface' "$(php_str "$LIMESURVEY_API_MODE")"
         if [ -n "$LIMESURVEY_DONT_SHOW_SCRIPT_NAME" ]; then
             set_config 'showScriptName' "false"
+        else
+            set_config 'showScriptName' "true"
         fi
 
         if [ -n "$MYSQL_SSL_CA" ]; then
-            set_config 'attributes' "array(PDO::MYSQL_ATTR_SSL_CA => '\/var\/www\/html\/$MYSQL_SSL_CA', PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false)"
+            set_config 'attributes' "array(PDO::MYSQL_ATTR_SSL_CA => $(php_str "/var/www/html/$MYSQL_SSL_CA"), PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false)"
         fi
 
         # Remove session line if exists
         sed -i "/^[[:space:]]*'session'/d" application/config/config.php
         if [ -n "$LIMESURVEY_USE_DB_SESSIONS" ]; then
-            # Add session line
-    awk '/DbHttpSession/ && c == 0 { c = 1; system("cat") } { print }' application/config/config.php > application/config/config.tmp <<'EOPHP'
+            # Add session line before the commented DbHttpSession example
+            awk '/^[[:space:]]*.urlManager.[[:space:]]*=>/ && c == 0 { c = 1; system("cat") } { print }' application/config/config.php > application/config/config.tmp <<'EOPHP'
     'session' => array ('class' => 'application.core.web.DbHttpSession', 'connectionID' => 'db', 'sessionTableName' => '{{sessions}}', 'autoCreateSessionTable' => false, ),
 EOPHP
-           mv application/config/config.tmp application/config/config.php
+            mv application/config/config.tmp application/config/config.php
         fi
     fi
 
-    # Install BaltimoreCyberTrustRoot.crt.pem if needed
-    if [ "$MYSQL_SSL_CA" == "BaltimoreCyberTrustRoot.crt.pem" ] && ! [ -e BaltimoreCyberTrustRoot.crt.pem ]; then
-        echo "Downloading BaltimoreCyberTrustroot.crt.pem"
-        if curl -o BaltimoreCyberTrustRoot.crt.pem -fsL "https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem"; then
-            echo "Downloaded successfully"
-        else
-            echo "Failed to download certificate - continuing anyway"
-        fi
-    fi
+    download_ca 'DigiCertGlobalRootG2.crt.pem' 'https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem'
+    download_ca 'global-bundle.pem' 'https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem'
 
-    # Install Amazon global-bundle.pem if needed
-    if [ "$MYSQL_SSL_CA" == "global-bundle.pem" ] && ! [ -e global-bundle.pem ]; then
-        echo "Downloading Amazon global-bundle.pem"
-        if curl -o global-bundle.pem -fsL "https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem"; then
-            echo "Downloaded successfully"
-        else
-            echo "Failed to download certificate - continuing anyway"
-        fi
-    fi
-
-    echo "" > /usr/local/etc/php/conf.d/sessions.ini
     if [ -n "$LIMESURVEY_PHP_SESSION_SAVE_HANDLER" ] && [ -n "$LIMESURVEY_PHP_SESSION_SAVE_PATH" ]; then
         echo "Configuring custom session handler for PHP"
-        echo -e "session.save_handler = \"$LIMESURVEY_PHP_SESSION_SAVE_HANDLER\"\nsession.save_path = \"$LIMESURVEY_PHP_SESSION_SAVE_PATH\"" > /usr/local/etc/php/conf.d/sessions.ini
+        printf 'session.save_handler = "%s"\nsession.save_path = "%s"\n' \
+            "$LIMESURVEY_PHP_SESSION_SAVE_HANDLER" "$LIMESURVEY_PHP_SESSION_SAVE_PATH" > /usr/local/etc/php/conf.d/sessions.ini
+    else
+        : > /usr/local/etc/php/conf.d/sessions.ini
     fi
 
     if [ -z "$LIMESURVEY_DONT_UPDATE" ]; then
         DBENGINE='MyISAM'
         if [ -n "$LIMESURVEY_USE_INNODB" ]; then
-            chmod ug+w application/core/db/MysqlSchema.php
-            #If you want to use INNODB - remove MyISAM specification from LimeSurvey code
-            sed -i "/ENGINE=MyISAM/s/\(ENGINE=MyISAM \)//1" application/core/db/MysqlSchema.php
-            #Also set mysqlEngine in config file
-            sed -i "/\/\/ Update default LimeSurvey config here/s//'mysqlEngine'=>'InnoDB',/" application/config/config.php
+            # Read by MysqlSchema and by the install command (via DBENGINE)
+            set_config 'mysqlEngine' "'InnoDB'"
             DBENGINE='InnoDB'
-            chmod ug-w application/core/db/MysqlSchema.php
         fi
 
-        #Set SMTP settings if environment contains values for it
+        # Default SMTP settings, overridden below when LIMESURVEY_SMTP_HOST is set
         set_config 'emailmethod' "'mail'"
         set_config 'emailsmtphost' "'localhost'"
         set_config 'siteadminemail' "'your-email@example.net'"
@@ -202,16 +202,16 @@ EOPHP
         set_config 'emailsmtpdebug' "''"
         if [ -n "$LIMESURVEY_SMTP_HOST" ]; then
             set_config 'emailmethod' "'smtp'"
-            set_config 'emailsmtphost' "'$LIMESURVEY_SMTP_HOST'"
-            set_config 'siteadminemail' "'$LIMESURVEY_ADMIN_EMAIL'"
-            set_config 'siteadminbounce' "'$LIMESURVEY_FROM_EMAIL'"
-            set_config 'siteadminname' "'$LIMESURVEY_ADMIN_NAME'"
+            set_config 'emailsmtphost' "$(php_str "$LIMESURVEY_SMTP_HOST")"
+            set_config 'siteadminemail' "$(php_str "$LIMESURVEY_ADMIN_EMAIL")"
+            set_config 'siteadminbounce' "$(php_str "$LIMESURVEY_FROM_EMAIL")"
+            set_config 'siteadminname' "$(php_str "$LIMESURVEY_ADMIN_NAME")"
             if [ -n "$LIMESURVEY_SMTP_USER" ] && [ -n "$LIMESURVEY_SMTP_PASSWORD" ]; then
-                set_config 'emailsmtpuser' "'$LIMESURVEY_SMTP_USER'"
-                set_config 'emailsmtppassword' "'$LIMESURVEY_SMTP_PASSWORD'"
+                set_config 'emailsmtpuser' "$(php_str "$LIMESURVEY_SMTP_USER")"
+                set_config 'emailsmtppassword' "$(php_str "$LIMESURVEY_SMTP_PASSWORD")"
             fi
             if [ -n "$LIMESURVEY_SMTP_SSL" ]; then
-                set_config 'emailsmtpssl' "'$LIMESURVEY_SMTP_SSL'"
+                set_config 'emailsmtpssl' "$(php_str "$LIMESURVEY_SMTP_SSL")"
             fi
             if [ -n "$LIMESURVEY_SMTP_DEBUG" ]; then
                 set_config 'emailsmtpdebug' "1"
@@ -228,7 +228,7 @@ EOPHP
         chmod ug=rwx -R /var/lime/sessions
     fi
 
-    # The following 12 lines are borrowed from martialblog's entrypoint.sh
+    # The following lines are borrowed from martialblog's entrypoint.sh
     # see: https://github.com/martialblog/docker-limesurvey/blob/master/6.0/apache/entrypoint.sh
     # Check if LimeSurvey database is provisioned
 
