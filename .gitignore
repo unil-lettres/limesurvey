@@ -1,17 +1,10 @@
-# Ignore structural folders
-plugins/Demo
-plugins/index.html
-config/*
-!config/.keep
-upload/*
-!upload/.keep
-
 # Ignore IDE configuration folder
 .idea
 .vscode
 
 # Ignore configuration files
 .env
+db.env
 docker-compose.override.yml
 
 # Ignore system files

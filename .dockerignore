@@ -1,0 +1,19 @@
+# Ignore VCS & IDE metadata
+.git
+.github
+.gitignore
+.idea
+.vscode
+
+# Ignore local configuration & secrets
+.env
+db.env
+
+# Ignore configuration files & documentation
+docker-compose*.yml
+README.md
+env.example
+db.env.example
+
+# Ignore system files
+**/.DS_Store
