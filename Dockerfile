@@ -92,8 +92,10 @@ RUN set -eux; \
     for d in /tmp/lime*; do if [ -d "$d" ]; then find "$d" -maxdepth 1 -mindepth 1 -exec mv -t /var/www/html/ {} +; rmdir "$d"; fi; done; \
     rm /tmp/lime.zip; \
     rm -f /tmp/LIMESURVEY_VERSION; \
-    chown -R www-data:www-data /var/www/html; \
-    chmod -R u+rwX,go=rX /var/www/html
+    chown -R root:root /var/www/html; \
+    chmod -R u=rwX,go=rX /var/www/html; \
+    cd /var/www/html; \
+    chown -R www-data:www-data application/config tmp upload
 
 # Setup internal fallback directories for volume initialization
 RUN mkdir -p /var/lime/application/config /var/lime/upload /var/lime/tmp /var/lime/sessions \
@@ -113,13 +115,13 @@ RUN printf '%s\n' \
 
 # Copy your local project plugins
 COPY ./plugins/. /var/www/html/plugins
-RUN chown -R www-data:www-data /var/www/html/plugins \
-    && chmod -R u+rwX,go=rX /var/www/html/plugins
+RUN chown -R root:root /var/www/html/plugins \
+    && chmod -R u=rwX,go=rX /var/www/html/plugins
 
 # The base image symlinks Apache logs to /dev/stdout and /dev/stderr; those
 # /proc/self/fd links are not resolvable by an unprivileged user. Pipe the logs
 # through cat instead: it inherits the container's stdout, so Docker handles the
-# log rotation (see the logging options in docker-compose.yml) and nothing grows on disk.
+# log rotation and nothing grows on disk.
 RUN rm -f /var/log/apache2/*.log \
     && a2disconf other-vhosts-access-log \
     && sed -i -e 's#^\([[:space:]]*\)ErrorLog .*#\1ErrorLog "|/bin/cat"#' \

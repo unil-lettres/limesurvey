@@ -77,7 +77,7 @@ db_has_tables() {
             if (in_array((string) $e->getCode(), ["42S02", "42P01"], true)) {
                 exit(1);
             }
-            fwrite(STDERR, $e->getMessage() . "\n");docker-enbtrypoint
+            fwrite(STDERR, $e->getMessage() . "\n");
             exit(3);
         }'
 }
