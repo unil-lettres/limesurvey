@@ -82,6 +82,12 @@ RUN a2enmod rewrite remoteip && \
 RUN sed -i -E 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' /etc/apache2/sites-available/000-default.conf
 
+# /admin is a physical directory, so mod_dir redirects to /admin/ using the internal port (8080).
+# Route it to the LimeSurvey admin route instead.
+RUN sed -i '/^[[:space:]]*DocumentRoot /a\\tRewriteEngine On\n\tRewriteRule ^/admin/?$ /index.php/admin [L]' \
+    /etc/apache2/sites-available/000-default.conf \
+    && grep -q 'RewriteRule ^/admin' /etc/apache2/sites-available/000-default.conf
+
 # Download, extract LimeSurvey dynamically using the VERSION file
 COPY VERSION /tmp/LIMESURVEY_VERSION
 RUN set -eux; \
